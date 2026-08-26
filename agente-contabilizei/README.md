@@ -85,18 +85,22 @@ folgado para esse tipo de uso, com contexto de até 1M tokens.
 └── app/
     ├── supabase_client.py  # consulta a tabela (tool do agente)
     ├── charts.py             # gera as imagens dos gráficos (matplotlib)
+    ├── report.py              # monta o relatório em PDF (reportlab)
     └── gemini_agent.py      # loop do agente (Gemini + tool calling)
 ```
 
-## Gráficos
+## Gráficos e relatórios em PDF
 
-O agente tem uma terceira tool, `gerar_grafico`, usada automaticamente quando
-a pergunta pede para "ver", "mostrar", "plotar" ou "visualizar" algo (ex.:
-"mostra num gráfico a evolução por ano", "plota um comparativo entre as
-cidades"). Ela busca os dados agregados no Supabase e desenha um gráfico de
-barra ou linha com matplotlib, exibido diretamente no chat (`chat_web.py`)
-ou salvo em `/tmp/graficos_agente` (no terminal, `chat_cli.py` imprime o
-caminho do arquivo).
+O agente tem duas tools além das de consulta:
+
+- `gerar_grafico` — acionada quando você pede para "ver", "mostrar" ou
+  "plotar" algo. Busca os dados agregados e desenha um gráfico de barra
+  ou linha, exibido direto no chat (`chat_web.py`) ou salvo em
+  `/tmp/graficos_agente` (no terminal, `chat_cli.py` imprime o caminho).
+- `gerar_relatorio` — acionada quando você pede um "relatório", "PDF" ou
+  para "exportar" os dados. Monta um PDF de uma página (título + gráfico
+  + tabela de valores) e oferece um botão de download no chat web; no
+  terminal, imprime o caminho do arquivo salvo.
 
 ## Troubleshooting rápido
 
