@@ -13,11 +13,7 @@ create index if not exists idx_base_dados_ano_mes on base_dados (ano, mes);
 create index if not exists idx_base_dados_cidade on base_dados (cidade_agrupada);
 create index if not exists idx_base_dados_segmento on base_dados (class_segmentos);
 
--- Função de agregação: soma abertura_empresas agrupando por ano, mês,
--- cidade ou segmento, com os mesmos filtros opcionais de sempre.
--- Isso permite que o agente responda perguntas de "visão geral"
--- (total do ano, comparação entre cidades, etc.) com UMA chamada só,
--- em vez de somar centenas de linhas cruas manualmente no chat.
+
 create or replace function totais_aberturas(
     p_ano integer default null,
     p_mes integer default null,
@@ -47,10 +43,7 @@ as $$
     order by chave;
 $$;
 
--- Row Level Security: como o agente acessa via SUPABASE_SECRET_KEY
--- (service_role), o RLS abaixo é opcional — ele só passa a valer se
--- algum dia você expuser essa tabela também via SUPABASE_PUBLISHABLE_KEY
--- (ex.: um dashboard público). Deixe habilitado por segurança:
+
 alter table base_dados enable row level security;
 
 create policy "Leitura pública dos dados agregados"
