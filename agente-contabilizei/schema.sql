@@ -49,5 +49,4 @@ alter table base_dados enable row level security;
 create policy "Leitura pública dos dados agregados"
     on base_dados for select
     using (true);
--- Não criamos policy de insert/update/delete: só o service_role
--- (que ignora RLS) pode escrever — ou seja, só o seu backend.
+
