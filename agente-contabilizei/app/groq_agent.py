@@ -4,12 +4,10 @@ from groq import Groq
 
 from app.supabase_client import consultar_aberturas
 
-# --- onde a GROQ_API_KEY é usada --------------------------------
-# O client já lê GROQ_API_KEY do ambiente automaticamente, mas
-# deixamos explícito aqui pra ficar claro de onde vem.
+
 client = Groq(api_key=os.environ["GROQ_API_KEY"])
 MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
-# -------------------------------------------------------------------
+
 
 SYSTEM_PROMPT = """Você é um analista de dados especializado no mercado
 brasileiro de abertura de empresas. Você tem acesso a uma tabela chamada
