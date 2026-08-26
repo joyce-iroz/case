@@ -1,12 +1,10 @@
 import os
 from supabase import create_client, Client
 
-# --- onde a SUPABASE_URL e a SUPABASE_SECRET_KEY são usadas --------
-# secret key porque é o backend falando direto com o banco, sem
-# passar por login de usuário nenhum.
+
 SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_SECRET_KEY = os.environ["SUPABASE_SECRET_KEY"]
-# ---------------------------------------------------------------------
+
 
 _client: Client | None = None
 
