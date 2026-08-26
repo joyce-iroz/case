@@ -5,10 +5,8 @@ Local:
     streamlit run chat_web.py
 
 Deploy grátis:
-    1. Suba este repositório no GitHub (SEM o arquivo .env).
-    2. share.streamlit.io > New app > aponte pro repo > arquivo chat_web.py.
-    3. Em "Advanced settings > Secrets", cole o conteúdo do seu .env
-       (mesmo formato chave=valor).
+    1. share.streamlit.io > New app > aponte pro repo > arquivo chat_web.py.
+
 """
 import os
 import uuid
