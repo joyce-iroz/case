@@ -84,12 +84,21 @@ def perguntar(pergunta: str, historico: list[dict] | None = None) -> tuple[str, 
     Manda uma pergunta pro agente. `historico` é a lista de mensagens
     anteriores (sem o system prompt), para manter contexto entre turnos.
     Retorna (resposta_texto, novo_historico).
+
+    IMPORTANTE: o `historico` persistido entre turnos guarda só o texto
+    final de cada pergunta/resposta — as chamadas de tool e os dados
+    brutos retornados pelo Supabase NÃO entram no histórico salvo, só
+    são usados dentro do turno atual. Isso evita que a conversa cresça
+    sem limite e estoure o TPM (tokens por minuto) do Groq depois de
+    algumas perguntas.
     """
     mensagens = [{"role": "system", "content": SYSTEM_PROMPT}]
-    mensagens += historico or []
+    # mantém só as últimas 6 mensagens (3 perguntas/respostas) de contexto
+    mensagens += (historico or [])[-6:]
     mensagens.append({"role": "user", "content": pergunta})
 
-    # loop simples de tool-calling (até 5 idas e voltas)
+    # loop simples de tool-calling (até 5 idas e voltas) — as mensagens
+    # de tool_calls/tool ficam só aqui dentro, não voltam pro histórico.
     for _ in range(5):
         resp = client.chat.completions.create(
             model=MODEL,
@@ -100,7 +109,10 @@ def perguntar(pergunta: str, historico: list[dict] | None = None) -> tuple[str, 
         msg = resp.choices[0].message
 
         if not msg.tool_calls:
-            novo_historico = mensagens[1:] + [{"role": "assistant", "content": msg.content}]
+            novo_historico = (historico or []) + [
+                {"role": "user", "content": pergunta},
+                {"role": "assistant", "content": msg.content},
+            ]
             return msg.content, novo_historico
 
         mensagens.append(msg)
@@ -115,4 +127,8 @@ def perguntar(pergunta: str, historico: list[dict] | None = None) -> tuple[str, 
                 }
             )
 
-    return "Não consegui concluir — muitas chamadas de ferramenta.", mensagens[1:]
+    novo_historico = (historico or []) + [
+        {"role": "user", "content": pergunta},
+        {"role": "assistant", "content": "Não consegui concluir — muitas chamadas de ferramenta."},
+    ]
+    return "Não consegui concluir — muitas chamadas de ferramenta.", novo_historico

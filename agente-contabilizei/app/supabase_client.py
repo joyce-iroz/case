@@ -50,6 +50,6 @@ def consultar_aberturas(
     if segmento is not None:
         query = query.ilike("class_segmentos", f"%{segmento}%")
 
-    limite_efetivo = min(limite, 15) if sem_filtro else min(limite, 200)
+    limite_efetivo = min(limite, 10) if sem_filtro else min(limite, 80)
     resp = query.limit(limite_efetivo).execute()
     return resp.data
