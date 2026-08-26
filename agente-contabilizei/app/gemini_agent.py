@@ -8,10 +8,9 @@ from app.supabase_client import consultar_aberturas, totais_aberturas
 from app.charts import criar_grafico
 from app.report import criar_relatorio_pdf
 
-# --- onde a GEMINI_API_KEY é usada -------------------------------
+
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.6-flash")
-# -------------------------------------------------------------------
 
 SYSTEM_PROMPT = """Você é um analista de dados especializado no mercado
 brasileiro de abertura de empresas. Você tem acesso a uma tabela chamada
