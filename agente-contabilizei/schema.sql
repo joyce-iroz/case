@@ -13,6 +13,40 @@ create index if not exists idx_base_dados_ano_mes on base_dados (ano, mes);
 create index if not exists idx_base_dados_cidade on base_dados (cidade_agrupada);
 create index if not exists idx_base_dados_segmento on base_dados (class_segmentos);
 
+-- Função de agregação: soma abertura_empresas agrupando por ano, mês,
+-- cidade ou segmento, com os mesmos filtros opcionais de sempre.
+-- Isso permite que o agente responda perguntas de "visão geral"
+-- (total do ano, comparação entre cidades, etc.) com UMA chamada só,
+-- em vez de somar centenas de linhas cruas manualmente no chat.
+create or replace function totais_aberturas(
+    p_ano integer default null,
+    p_mes integer default null,
+    p_cidade text default null,
+    p_segmento text default null,
+    p_agrupar_por text default 'ano'  -- 'ano' | 'mes' | 'cidade' | 'segmento'
+)
+returns table(chave text, total bigint)
+language sql
+stable
+as $$
+    select
+        case p_agrupar_por
+            when 'ano' then ano::text
+            when 'mes' then mes::text
+            when 'cidade' then cidade_agrupada
+            when 'segmento' then class_segmentos
+            else 'total'
+        end as chave,
+        sum(abertura_empresas) as total
+    from base_dados
+    where (p_ano is null or ano = p_ano)
+      and (p_mes is null or mes = p_mes)
+      and (p_cidade is null or cidade_agrupada ilike '%' || p_cidade || '%')
+      and (p_segmento is null or class_segmentos ilike '%' || p_segmento || '%')
+    group by chave
+    order by chave;
+$$;
+
 -- Row Level Security: como o agente acessa via SUPABASE_SECRET_KEY
 -- (service_role), o RLS abaixo é opcional — ele só passa a valer se
 -- algum dia você expuser essa tabela também via SUPABASE_PUBLISHABLE_KEY

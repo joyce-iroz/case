@@ -4,11 +4,11 @@ import json
 from google import genai
 from google.genai import types
 
-from app.supabase_client import consultar_aberturas
+from app.supabase_client import consultar_aberturas, totais_aberturas
 
 # --- onde a GEMINI_API_KEY é usada -------------------------------
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
-MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.6-flash")
 # -------------------------------------------------------------------
 
 SYSTEM_PROMPT = """Você é um analista de dados especializado no mercado
@@ -23,15 +23,22 @@ CURITIBA, FLORIANOPOLIS, grande_sp, outros.
 Segmentos: 30 categorias de CNAE agrupado (ex.: Psicologia, TI/DEV,
 Odontologia, Advocacia, Medicina, etc.).
 
-Sempre que precisar de números, use a tool `consultar_aberturas` —
-nunca invente valores. A tool retorna no máximo algumas dezenas de
-linhas por chamada, então:
-- Prefira várias chamadas específicas (ex.: uma por ano, ou uma por
-  cidade) a uma chamada ampla sem filtro nenhum.
-- Se a pergunta pedir uma agregação (soma, média, crescimento) que
-  exija muitos meses/cidades/segmentos, faça isso em várias chamadas
-  pequenas e some os resultados você mesmo, explicando o raciocínio
-  de forma breve.
+Você tem DUAS tools disponíveis:
+
+1. `totais_aberturas` — retorna totais JÁ SOMADOS pelo banco, agrupados
+   por ano, mês, cidade ou segmento. USE ESTA para qualquer pergunta de
+   visão geral: totais, comparações, tendência, projeção, crescimento.
+   Uma chamada só já traz, por exemplo, o total de cada um dos 8 anos.
+
+2. `consultar_aberturas` — retorna linhas cruas (não agregadas), com
+   filtros. Use APENAS quando a pergunta pedir detalhe granular real
+   (ex.: "me mostra alguns registros de Psicologia em SP em 2024").
+
+Para projeções e tendências: chame `totais_aberturas` agrupando por
+'ano' (ou 'mes', se for sazonalidade) e faça você mesmo a extrapolação
+simples sobre esses totais já agregados — nunca tente somar linha por
+linha com `consultar_aberturas` para perguntas desse tipo, é lento e
+não cabe no limite de chamadas.
 """
 
 _TOOL_DECLARATION = types.FunctionDeclaration(
@@ -57,7 +64,30 @@ _TOOL_DECLARATION = types.FunctionDeclaration(
         },
     },
 )
-_TOOLS = [types.Tool(function_declarations=[_TOOL_DECLARATION])]
+_TOOL_TOTAIS = types.FunctionDeclaration(
+    name="totais_aberturas",
+    description=(
+        "Retorna totais JÁ SOMADOS (agregados no banco), agrupados por "
+        "'ano', 'mes', 'cidade' ou 'segmento', com filtros opcionais. "
+        "Prefira esta tool para qualquer pergunta de totais, comparação, "
+        "tendência, crescimento ou projeção."
+    ),
+    parameters={
+        "type": "object",
+        "properties": {
+            "ano": {"type": "integer", "description": "Filtra por um ano específico, ex.: 2025"},
+            "mes": {"type": "integer", "description": "Filtra por um mês específico, 1 a 12"},
+            "cidade": {"type": "string", "description": "Busca parcial, ex.: 'SAO PAULO'"},
+            "segmento": {"type": "string", "description": "Busca parcial, ex.: 'Psicologia'"},
+            "agrupar_por": {
+                "type": "string",
+                "enum": ["ano", "mes", "cidade", "segmento"],
+                "description": "Como agrupar a soma. Use 'ano' para tendência/projeção.",
+            },
+        },
+    },
+)
+_TOOLS = [types.Tool(function_declarations=[_TOOL_DECLARATION, _TOOL_TOTAIS])]
 
 _CONFIG = types.GenerateContentConfig(
     system_instruction=SYSTEM_PROMPT,
@@ -71,6 +101,8 @@ _CONFIG = types.GenerateContentConfig(
 def _executar_tool(nome: str, argumentos: dict):
     if nome == "consultar_aberturas":
         return consultar_aberturas(**argumentos)
+    if nome == "totais_aberturas":
+        return totais_aberturas(**argumentos)
     raise ValueError(f"Tool desconhecida: {nome}")
 
 
@@ -88,7 +120,7 @@ def perguntar(pergunta: str, historico: list | None = None) -> tuple[str, list]:
     contents = list(historico[-6:])
     contents.append(types.Content(role="user", parts=[types.Part.from_text(text=pergunta)]))
 
-    for _ in range(5):
+    for _ in range(8):
         resp = client.models.generate_content(model=MODEL, contents=contents, config=_CONFIG)
         candidate = resp.candidates[0]
         function_calls = [p.function_call for p in candidate.content.parts if p.function_call]

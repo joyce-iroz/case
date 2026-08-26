@@ -53,3 +53,33 @@ def consultar_aberturas(
     limite_efetivo = min(limite, 10) if sem_filtro else min(limite, 80)
     resp = query.limit(limite_efetivo).execute()
     return resp.data
+
+
+def totais_aberturas(
+    ano: int | None = None,
+    mes: int | None = None,
+    cidade: str | None = None,
+    segmento: str | None = None,
+    agrupar_por: str = "ano",
+) -> list[dict]:
+    """
+    Retorna totais JÁ SOMADOS (agregados no banco, via função SQL
+    totais_aberturas — ver schema.sql), agrupados por 'ano', 'mes',
+    'cidade' ou 'segmento'. Uma chamada aqui substitui dezenas/centenas
+    de linhas cruas — use isso para perguntas de visão geral, totais,
+    comparações e projeções.
+    """
+    if agrupar_por not in {"ano", "mes", "cidade", "segmento"}:
+        agrupar_por = "ano"
+    client = get_client()
+    resp = client.rpc(
+        "totais_aberturas",
+        {
+            "p_ano": ano,
+            "p_mes": mes,
+            "p_cidade": cidade,
+            "p_segmento": segmento,
+            "p_agrupar_por": agrupar_por,
+        },
+    ).execute()
+    return resp.data
