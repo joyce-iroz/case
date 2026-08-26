@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from app.groq_agent import perguntar  # noqa: E402
+from app.gemini_agent import perguntar  # noqa: E402
 
 st.set_page_config(page_title="Agente Contabilizei", page_icon="📊")
 st.title("📊 Agente — Mercado de Abertura de Empresas")

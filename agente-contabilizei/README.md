@@ -1,55 +1,55 @@
-# Agente — Mercado de Abertura de Empresas (Supabase + Groq)
+# Agente — Mercado de Abertura de Empresas (Supabase + Gemini)
 
-## ⚠️ Antes de tudo
-As chaves que você colou no chat (Supabase secret key, Groq key) devem ser
-**rotacionadas** antes de usar este projeto:
-- Supabase: Project Settings → API → regenerar `service_role`. Se a
-  "chave do projeto" que você colou for a senha do Postgres, trocar
-  também em Settings → Database → Reset Database Password.
-- Groq: console.groq.com → API Keys → revogar a chave antiga → criar nova.
-
-Só depois disso, use as chaves **novas** neste projeto.
+## ⚠️ Segurança
+Qualquer chave que você já colou em algum chat deve ser tratada como
+comprometida — revogue e gere uma nova antes de usar em produção.
+Nunca cole valores reais de `.env` em mensagens de chat, commits do
+Git, ou capturas de tela.
 
 ## Mapa de credenciais — onde cada uma entra
 
-| Credencial que você tem | Vai para a variável (.env) | Usada em qual arquivo |
+| Credencial | Vai para a variável (.env) | Usada em qual arquivo |
 |---|---|---|
 | Project URL do Supabase | `SUPABASE_URL` | `app/supabase_client.py`, `load_data.py` |
-| `sb_publishable_...` | `SUPABASE_PUBLISHABLE_KEY` | (reservada — só é necessária se algum dia você criar uma tela pública que lê o Supabase direto do navegador; o agente em si usa a secret) |
-| `sb_secret_...` | `SUPABASE_SECRET_KEY` | `app/supabase_client.py`, `load_data.py` |
-| JWKS URL | `SUPABASE_JWKS_URL` | (reservada — só necessária se você adicionar login de usuários e precisar validar tokens JWT; não é usada agora) |
-| chave/senha do Postgres que você colou | não entra no `.env` deste projeto — só seria usada se você conectasse direto via `psycopg2`/connection string, o que não fazemos aqui (usamos a API REST do Supabase) | — |
-| `gsk_...` | `GROQ_API_KEY` | `app/groq_agent.py` |
+| `sb_secret_...` (Supabase) | `SUPABASE_SECRET_KEY` | `app/supabase_client.py`, `load_data.py` |
+| `sb_publishable_...` (Supabase) | `SUPABASE_PUBLISHABLE_KEY` | (reservada — só necessária se algum dia você criar uma tela pública que lê o Supabase direto do navegador; o agente em si usa a secret) |
+| JWKS URL (Supabase) | `SUPABASE_JWKS_URL` | (reservada — só necessária se adicionar login de usuários e validar tokens JWT; não é usada agora) |
+| Chave da Gemini (aistudio.google.com/apikey) | `GEMINI_API_KEY` | `app/gemini_agent.py` |
 
-Ou seja: **só duas variáveis realmente fazem o agente funcionar** —
-`SUPABASE_URL`, `SUPABASE_SECRET_KEY` e `GROQ_API_KEY`. As outras (`PUBLISHABLE_KEY`,
-`JWKS_URL`) estão no `.env.example` só porque você já tinha elas em mãos —
-guarde-as, mas não são necessárias para este agente específico.
+Só **três variáveis** realmente fazem o agente funcionar:
+`SUPABASE_URL`, `SUPABASE_SECRET_KEY` e `GEMINI_API_KEY`.
+
+## Por que Gemini em vez de Groq
+
+O projeto usava Groq (`llama-3.3-70b-versatile` → depois `gpt-oss-120b`),
+mas o tier gratuito da Groq tem um limite de tokens por minuto (TPM) baixo
+(8K), que estourava com facilidade em conversas com algumas perguntas
+seguidas. O Gemini (`gemini-2.5-flash`) tem um tier gratuito bem mais
+folgado para esse tipo de uso, com contexto de até 1M tokens.
 
 ## Passo a passo
 
-1. **Rotacione as chaves** (seção acima).
-2. Crie a tabela no Supabase: cole o conteúdo de `schema.sql` no
+1. Crie a tabela no Supabase: cole o conteúdo de `schema.sql` no
    SQL Editor do painel do Supabase e rode.
-3. Copie o arquivo de exemplo e preencha com as chaves novas:
+2. Copie o arquivo de exemplo e preencha com suas chaves:
    ```bash
    cp .env.example .env
-   # edite o .env e cole os valores novos
+   # edite o .env e cole os valores
    ```
-4. Instale as dependências:
+3. Instale as dependências:
    ```bash
    python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
    pip install -r requirements.txt
    ```
-5. Suba os dados do case para o Supabase (uma vez só):
+4. Suba os dados do case para o Supabase (uma vez só):
    ```bash
    python load_data.py caminho/para/Dados_Case_2026.xlsx
    ```
-6. Teste pelo terminal:
+5. Teste pelo terminal:
    ```bash
    python chat_cli.py
    ```
-7. Ou suba o chat web local:
+6. Ou suba o chat web local:
    ```bash
    streamlit run chat_web.py
    ```
@@ -61,9 +61,15 @@ guarde-as, mas não são necessárias para este agente específico.
 2. Em share.streamlit.io → "New app" → aponte para o repositório e o
    arquivo `chat_web.py`.
 3. Em "Advanced settings → Secrets", cole as mesmas variáveis do seu
-   `.env` (formato `CHAVE = "valor"`).
-4. Deploy. Pronto — chat público (ou com senha, se configurar) rodando
-   de graça.
+   `.env` (formato TOML: `CHAVE = "valor"`, uma por linha):
+   ```toml
+   SUPABASE_URL = "https://seu-projeto.supabase.co"
+   SUPABASE_SECRET_KEY = "sb_secret_..."
+   GEMINI_API_KEY = "sua-chave-gemini"
+   GEMINI_MODEL = "gemini-2.5-flash"
+   ```
+4. Deploy. Depois de qualquer troca nos Secrets: **Save** e depois
+   **Reboot app** (nem sempre reinicia sozinho).
 
 ## Estrutura
 
@@ -78,5 +84,17 @@ guarde-as, mas não são necessárias para este agente específico.
 ├── chat_web.py           # chat web (Streamlit)
 └── app/
     ├── supabase_client.py  # consulta a tabela (tool do agente)
-    └── groq_agent.py        # loop do agente (Groq + tool calling)
+    └── gemini_agent.py      # loop do agente (Gemini + tool calling)
 ```
+
+## Troubleshooting rápido
+
+- **`KeyError` numa variável**: ela não está nos Secrets do Streamlit
+  (ou não foi salva/rebootada). Confere nome exato (maiúsculas).
+- **`Invalid API Key` / `AuthenticationError`**: a chave nos Secrets
+  não bate com a chave ativa no console do provedor (Supabase ou
+  Google AI Studio) — revoga e gera uma nova, copiando com o botão
+  de copiar (não selecionando manualmente).
+- **Erros de schema/tool ("expected integer but got null" etc.)**:
+  já tratado no código atual — se reaparecer, é sinal de que os
+  arquivos em `app/` estão desatualizados em relação a este repo.

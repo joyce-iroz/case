@@ -27,7 +27,7 @@ def consultar_aberturas(
 ) -> list[dict]:
     """
     Consulta a tabela base_dados com filtros opcionais.
-    Usada como 'tool' pelo agente (ver app/groq_agent.py).
+    Usada como 'tool' pelo agente (ver app/gemini_agent.py).
 
     OBS: o limite padrão é baixo de propósito (50 linhas) para não
     estourar o limite de tokens por minuto de contas gratuitas do

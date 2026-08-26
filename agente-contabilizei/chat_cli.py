@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from app.groq_agent import perguntar  # noqa: E402  (import depois do load_dotenv)
+from app.gemini_agent import perguntar  # noqa: E402  (import depois do load_dotenv)
 
 
 def main():
