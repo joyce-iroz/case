@@ -23,15 +23,24 @@ def consultar_aberturas(
     mes: int | None = None,
     cidade: str | None = None,
     segmento: str | None = None,
-    limite: int = 500,
+    limite: int = 50,
 ) -> list[dict]:
     """
     Consulta a tabela base_dados com filtros opcionais.
     Usada como 'tool' pelo agente (ver app/groq_agent.py).
+
+    OBS: o limite padrão é baixo de propósito (50 linhas) para não
+    estourar o limite de tokens por minuto de contas gratuitas do
+    Groq — se a consulta vier sem nenhum filtro (ano/mes/cidade/
+    segmento todos nulos), o limite é reduzido ainda mais.
     """
     client = get_client()
-    query = client.table("base_dados").select("*")
+    # não seleciona a coluna "id" (não é útil pro agente e só gasta tokens)
+    query = client.table("base_dados").select(
+        "ano,mes,cidade_agrupada,class_segmentos,abertura_empresas"
+    )
 
+    sem_filtro = ano is None and mes is None and cidade is None and segmento is None
     if ano is not None:
         query = query.eq("ano", ano)
     if mes is not None:
@@ -41,5 +50,6 @@ def consultar_aberturas(
     if segmento is not None:
         query = query.ilike("class_segmentos", f"%{segmento}%")
 
-    resp = query.limit(limite).execute()
+    limite_efetivo = min(limite, 15) if sem_filtro else min(limite, 200)
+    resp = query.limit(limite_efetivo).execute()
     return resp.data

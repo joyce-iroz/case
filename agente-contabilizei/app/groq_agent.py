@@ -24,9 +24,14 @@ Segmentos: 30 categorias de CNAE agrupado (ex.: Psicologia, TI/DEV,
 Odontologia, Advocacia, Medicina, etc.).
 
 Sempre que precisar de números, use a tool `consultar_aberturas` —
-nunca invente valores. Se a pergunta pedir uma agregação (soma, média,
-crescimento), busque os dados granulares com a tool e calcule você mesmo
-na resposta, explicando o raciocínio de forma breve.
+nunca invente valores. A tool retorna no máximo algumas dezenas de
+linhas por chamada (para não estourar limite de tokens), então:
+- Prefira várias chamadas específicas (ex.: uma por ano, ou uma por
+  cidade) a uma chamada ampla sem filtro nenhum.
+- Se a pergunta pedir uma agregação (soma, média, crescimento) que
+  exija muitos meses/cidades/segmentos, faça isso em várias chamadas
+  pequenas e some os resultados você mesmo, explicando o raciocínio
+  de forma breve — não peça uma única consulta gigante sem filtros.
 """
 
 TOOLS = [
