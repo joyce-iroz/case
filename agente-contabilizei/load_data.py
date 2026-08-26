@@ -13,10 +13,11 @@ from supabase import create_client
 
 load_dotenv()
 
-
+# --- onde a SUPABASE_SECRET_KEY é usada -----------------------------
+# Precisa da secret key (não a publishable) porque é uma escrita em massa.
 SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_SECRET_KEY = os.environ["SUPABASE_SECRET_KEY"]
-
+# ---------------------------------------------------------------------
 
 supabase = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
 

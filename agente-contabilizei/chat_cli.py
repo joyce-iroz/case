@@ -18,8 +18,10 @@ def main():
         pergunta = input("Você: ").strip()
         if pergunta.lower() in {"sair", "exit", "quit"}:
             break
-        resposta, historico = perguntar(pergunta, historico)
+        resposta, historico, graficos = perguntar(pergunta, historico)
         print(f"\nAgente: {resposta}\n")
+        for caminho in graficos:
+            print(f"[gráfico salvo em: {caminho}]\n")
 
 
 if __name__ == "__main__":

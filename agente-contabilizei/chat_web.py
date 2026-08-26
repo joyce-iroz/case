@@ -23,22 +23,27 @@ st.title("📊 Agente — Mercado de Abertura de Empresas")
 if "historico" not in st.session_state:
     st.session_state.historico = []
 if "mensagens_exibidas" not in st.session_state:
+    # cada item: (role, texto, lista_de_caminhos_de_grafico)
     st.session_state.mensagens_exibidas = []
 
-for role, conteudo in st.session_state.mensagens_exibidas:
+for role, conteudo, graficos in st.session_state.mensagens_exibidas:
     with st.chat_message(role):
         st.markdown(conteudo)
+        for caminho in graficos:
+            st.image(caminho)
 
-pergunta = st.chat_input("Pergunte algo sobre os dados...")
+pergunta = st.chat_input("Pergunte algo sobre os dados (ex.: 'mostra num gráfico a evolução por ano')...")
 if pergunta:
-    st.session_state.mensagens_exibidas.append(("user", pergunta))
+    st.session_state.mensagens_exibidas.append(("user", pergunta, []))
     with st.chat_message("user"):
         st.markdown(pergunta)
 
     with st.chat_message("assistant"):
         with st.spinner("Consultando..."):
-            resposta, st.session_state.historico = perguntar(
+            resposta, st.session_state.historico, graficos = perguntar(
                 pergunta, st.session_state.historico
             )
         st.markdown(resposta)
-    st.session_state.mensagens_exibidas.append(("assistant", resposta))
+        for caminho in graficos:
+            st.image(caminho)
+    st.session_state.mensagens_exibidas.append(("assistant", resposta, graficos))
