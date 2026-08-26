@@ -8,7 +8,7 @@ from app.supabase_client import consultar_aberturas
 # O client já lê GROQ_API_KEY do ambiente automaticamente, mas
 # deixamos explícito aqui pra ficar claro de onde vem.
 client = Groq(api_key=os.environ["GROQ_API_KEY"])
-MODEL = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
 # -------------------------------------------------------------------
 
 SYSTEM_PROMPT = """Você é um analista de dados especializado no mercado
@@ -37,22 +37,31 @@ TOOLS = [
             "description": (
                 "Consulta a tabela base_dados no Supabase, com filtros "
                 "opcionais por ano, mês, cidade e segmento. Retorna as "
-                "linhas granulares (não agregadas)."
+                "linhas granulares (não agregadas). Para um filtro que "
+                "não deve ser aplicado, passe null."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "ano": {"type": "integer", "description": "Ex.: 2025"},
-                    "mes": {"type": "integer", "description": "1 a 12"},
+                    "ano": {
+                        "type": ["integer", "null"],
+                        "description": "Ex.: 2025. Use null para não filtrar por ano.",
+                    },
+                    "mes": {
+                        "type": ["integer", "null"],
+                        "description": "1 a 12. Use null para não filtrar por mês.",
+                    },
                     "cidade": {
-                        "type": "string",
-                        "description": "Busca parcial, ex.: 'SAO PAULO'",
+                        "type": ["string", "null"],
+                        "description": "Busca parcial, ex.: 'SAO PAULO'. Use null para não filtrar.",
                     },
                     "segmento": {
-                        "type": "string",
-                        "description": "Busca parcial, ex.: 'Psicologia'",
+                        "type": ["string", "null"],
+                        "description": "Busca parcial, ex.: 'Psicologia'. Use null para não filtrar.",
                     },
                 },
+                "required": ["ano", "mes", "cidade", "segmento"],
+                "additionalProperties": False,
             },
         },
     }
