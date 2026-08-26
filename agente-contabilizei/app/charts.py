@@ -2,12 +2,10 @@ import os
 import uuid
 
 import matplotlib
-matplotlib.use("Agg")  # não precisa de display — só salvar arquivo
+matplotlib.use("Agg")  
 import matplotlib.pyplot as plt
 
 # Pasta temporária onde os gráficos gerados na sessão ficam salvos.
-# O Streamlit Cloud tem armazenamento efêmero (some ao reiniciar o app),
-# o que é suficiente: os gráficos só precisam durar a sessão do usuário.
 GRAFICOS_DIR = "/tmp/graficos_agente"
 os.makedirs(GRAFICOS_DIR, exist_ok=True)
 
